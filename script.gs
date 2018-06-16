@@ -1,46 +1,55 @@
-function doPost(e){
-  if(typeof e !== undefined); {
-    var jsonString = e.postData.getDataAsString();
-    var p = JSON.parse(jsonString);
-    
-    var date, user, comment, issueNumber, issueTitle, assignee;
-    if (p.comment !== undefined) {
-      // Issueへのコメント
-      date = p.comment.created_at;
-      user = p.comment.user.login;
-      comment = p.comment.body;
-      issueNumber = p.issue.number;
-      issueTitle = p.issue.title;
-      assignee = p.issue.assignee.login;
-    } else if (p.review !== undefined) {
-      // Pull Requestへのコメント
-      date = p.review.submitted_at;
-      user = p.review.user.login;
-      comment = p.review.body;
-      issueNumber = p.pull_request.number;
-      issueTitle = p.pull_request.title;
-      assignee = p.pull_request.assignee.login;
-    } else {
-      return;
-    }
-  
-    var logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
-    logSheet.appendRow([date, user, comment, issueNumber, issueTitle, assignee]);
-    
-    var timeOnlySheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Time Only");
-    var patternOfRecord = /(⌚|:watch:).*/i;
-    var match = patternOfRecord.exec(comment);
+function doPost(e) {
+  if (typeof e === undefined) { return; }
+  var event = JSON.parse(e.postData.getDataAsString());
+  var date, user, comment, issueNumber, issueTitle, assignee;
 
-    if (match == null || !(match.length > 0)) { return }   
-    timeOnlySheet.appendRow([date, user, comment, issueNumber, issueTitle, assignee, "", "", "", ""]);
-    
-    var dataRange = timeOnlySheet.getDataRange();
-    var lastRow = dataRange.getLastRow();
-    timeOnlySheet.getRange(lastRow, 7).setFormulaR1C1("=REGEXMATCH(RC[-4], \"m(in)?\")"); // min
-    timeOnlySheet.getRange(lastRow, 8).setFormulaR1C1("=RC[-2] = RC[-6]"); // self
-    timeOnlySheet.getRange(lastRow, 9).setFormulaR1C1("=VALUE(REGEXEXTRACT(RC[-6], \"(\\d+(\\.\\d+)?)\"))"); //raw value
-    timeOnlySheet.getRange(lastRow,10).setFormulaR1C1("=If(RC[-3], RC[-1]/60, RC[-1])"); // hour
+  const issueComment = event.comment;
+  const reviewComment = event.review;
+  if (issueComment !== undefined) {
+    // Extract info from issue comment.
+    date = issueComment.created_at;
+    user = issueComment.user.login;
+    comment = issueComment.body;
+    issueNumber = issueComment.number;
+    issueTitle = issueComment.title;
+    assignee = issueComment.assignee.login;
+  } else if (reviewComment !== undefined) {
+    // Extract info from review comment.
+    date = reviewComment.submitted_at;
+    user = reviewComment.user.login;
+    comment = reviewComment.body;
+    issueNumber = reviewComment.number;
+    issueTitle = reviewComment.title;
+  } else {
+    // You can even extract another type of comments!
+    return;
   }
+
+  const properties = PropertiesService.getScriptProperties();
+  const activeSheet = SpreadsheetApp.getActiveSpreadsheet();
+  // Record all of comments if necessary.
+  var sheetNameLog = properties.getProperty("SHEET_NAME_LOG");
+  if (sheetNameLog == null || sheetNameLog != "") {
+    var sheetLog = activeSheet.getSheetByName(sheetNameLog);
+    sheetLog.appendRow([date, user, comment, issueNumber, issueTitle, assignee]);
+  }
+
+  // Only time record which inludes specific pattern in comment string.
+  var sheetNameTimeOnly = PropertiesService.getScriptProperties().getProperty("SHEET_NAME_TIME_ONLY");
+  var sheetTimeOnly = activeSheet.getSheetByName(sheetNameTimeOnly);
+  var stringPatternRecord = PropertiesService.getScriptProperties().getProperty("PATTERN_RECORD");
+  var patternOfRecord = new RegExp(stringPatternRecord);
+  var match = patternOfRecord.exec(comment);
+
+  if (match == null || !(match.length > 0)) { return }
+  sheetTimeOnly.appendRow([date, user, comment, issueNumber, issueTitle, assignee, "", "", "", ""]);
+
+  var dataRange = sheetTimeOnly.getDataRange();
+  var lastRow = dataRange.getLastRow();
+  sheetTimeOnly.getRange(lastRow, 7).setFormulaR1C1("=REGEXMATCH(RC[-4], \"m(in)?\")"); // min
+  sheetTimeOnly.getRange(lastRow, 8).setFormulaR1C1("=RC[-2] = RC[-6]"); // self
+  sheetTimeOnly.getRange(lastRow, 9).setFormulaR1C1("=VALUE(REGEXEXTRACT(RC[-6], \"(\\d+(\\.\\d+)?)\"))"); //raw value
+  sheetTimeOnly.getRange(lastRow, 10).setFormulaR1C1("=If(RC[-3], RC[-1]/60, RC[-1])"); // hour
 }
 
 function archive() {
@@ -79,7 +88,7 @@ function getEstimate(issueId) {
 }
 
 function getAllIssues() {
-  var properties = PropertiesService.getScriptProperties();
+  const properties = PropertiesService.getScriptProperties();
   var api = 'https://api.github.com';
   var owner = properties.getProperty("GITHUB_OWNER");
   var token = properties.getProperty("GITHUB_ACCESS_TOKEN");
@@ -87,7 +96,7 @@ function getAllIssues() {
   var repo_id = properties.getProperty("GITHUB_REPOGITORY_ID");
   var PER_PAGE = 100;
 
-  var url = [api, 'repos', owner, repo, 'issues', repo_id, 'epics', epic_id].join('/');  
+  var url = [api, 'repos', owner, repo, 'issues', repo_id, 'epics', epic_id].join('/');
   var params = [['access_token', token]];
   var response = UrlFetchApp.fetch(url + '?' + params.map(function(x) { return x[0] + '=' + x[1] }).join('&'), options);
   for (var i = 0; i < issues.length; i++) {
@@ -129,7 +138,7 @@ function listIssues() {
   // issueのjsonから中身を取得
   var getAttributesOfIssue = function(issue){
     var id = issue["number"];
-   
+
     var milestone = "";
     if(issue["milestone"]) milestone = issue["milestone"]["title"];
 
@@ -140,7 +149,7 @@ function listIssues() {
 
     var assignee = "";
     if(issue["assignee"]) assignee = issue["assignee"]["login"];
-    
+
     var estimate = getEstimate(id);
 
 /*
@@ -148,7 +157,7 @@ function listIssues() {
     if(issue["milestone"] && issue["milestone"]["due_on"]){
       due_on = issue["milestone"]["due_on"].substring(0, 10);
     }
-    
+
 
 
     var opend_at = "";
