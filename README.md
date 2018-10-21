@@ -7,17 +7,17 @@ A simple GAS which records your working time commented on issue and pull request
 1. Create a Google Spreadsheet for time recording.
 1. Open script editor then copy `script.gs` or clone this repository using Chrome plugins such as [leonhartX/gas\-github](https://github.com/leonhartX/gas-github)
 1. Set following script properties.
-  1. `SHEET_NAME_LOG` : The name of sheet to record ALL of comment events on github.
-  1. `SHEET_NAME_TIME_ONLY` : The name of sheet to record ONLY comment that includes expression you specified as `PATTERN_RECORD`. They are counted as time you worked.
-  1. `PATTERN_RECORD`: A pattern to filter and extract working time from the comments. (e.g. `"(⌚|:watch:).*"`  just leaves comments such as `":watch: 30min"`)
+  - `SHEET_NAME_LOG` : The name of sheet to record ALL of comment events on github.
+  - `SHEET_NAME_TIME_ONLY` : The name of sheet to record ONLY comment that includes expression you specified as `PATTERN_RECORD`. They are counted as time you worked.
+  - `PATTERN_RECORD`: A pattern to filter and extract working time from the comments. (e.g. `"(⌚|:watch:).*"`  just leaves comments such as `":watch: 30min"`)
 1. Create following sheets.
-  1. Sheet to record ALL of github comment event. It's name should be same as `SHEET_NAME_LOG`
-  1. Sheet to record github comment events ONLY inludes expression specified in `PATTERN_RECORD` property. It's name should be same as `SHEET_NAME_TIME_ONLY`
+  - Sheet to record ALL of github comment event. It's name should be same as `SHEET_NAME_LOG`
+  - Sheet to record github comment events ONLY inludes expression specified in `PATTERN_RECORD` property. It's name should be same as `SHEET_NAME_TIME_ONLY`
 1. Add webhook to your github repo
-  1. Before go to github, deploy your script as web application from "Publish" > "Deploy as web app" and copy web app URL.
-  1. Add new webhook from your github repo's setting page.
-  1. Specify payload url as one you copied just before and content type as "application/json". Secret can be void.
-  1. Choose "Let me select individual events." and check following types of github event.
+  - Before go to github, deploy your script as web application from "Publish" > "Deploy as web app" and copy web app URL.
+  - Add new webhook from your github repo's setting page.
+  - Specify payload url as one you copied just before and content type as "application/json". Secret can be void.
+  - Choose "Let me select individual events." and check following types of github event.
     - Commit comments
     - Issue comments
     - Pull request reviews
