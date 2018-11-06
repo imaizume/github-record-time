@@ -26,7 +26,7 @@ function doPost(e) {
       comment: event.comment.body,
       issueNumber: event.issue.number,
       issueTitle: event.issue.title,
-      assignee: event.issue.assignee.login
+      assignee: event.issue.assignee === null ? "" : event.issue.assignee.login
     }
   }
 
