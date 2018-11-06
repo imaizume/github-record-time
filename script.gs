@@ -14,41 +14,26 @@ function doPost(e) {
 
   /// Parsed GitHub event object.
   var event = JSON.parse(e.postData.getDataAsString());
-  var issueComment = event.comment;
-  var reviewComment = event.review;
 
   /// Single row data object represents key as column and value as row value.
   var row = {};
 
   /// Extract single row data from an issue comment event.
-  var translateIssueCommentIntoRow = function(issueComment) {
+  var translateIssueCommentIntoRow = function(event) {
     return {
-      date: issueComment.created_at,
-      user: issueComment.user.login,
-      comment: issueComment.body,
-      issueNumber: issueComment.number,
-      issueTitle: issueComment.title,
-      assignee: issueComment.assignee.login
+      date: event.comment.created_at,
+      user: event.comment.user.login,
+      comment: event.comment.body,
+      issueNumber: event.issue.number,
+      issueTitle: event.issue.title,
+      assignee: event.issue.assignee.login
     }
   }
 
-  /// Extract single row data from a pull request review comment event.
-  var translateReviewCommentIntoRow = function(issueComment) {
-    return {
-      date: reviewComment.submitted_at,
-      user: reviewComment.user.login,
-      comment: reviewComment.body,
-      issueNumber: reviewComment.number,
-      issueTitle: reviewComment.title
-    }
-  }
 
   /// Record different type of property by type of the event.
-  if (issueComment !== undefined) {
-    row = translateIssueCommentIntoRow(issueComment)
-
-  } else if (reviewComment !== undefined) {
-    row = translateReviewCommentIntoRow(reviewComment)
+  if (event.comment !== undefined) {
+    row = translateIssueCommentIntoRow(event);
 
   } else {
     // NOTE: You can even extract another type of comments!
@@ -74,7 +59,7 @@ function doPost(e) {
   var sheetTimeOnly = activeSheet.getSheetByName(sheetNameTimeOnly);
   var stringPatternRecord = PropertiesService.getScriptProperties().getProperty("PATTERN_RECORD");
   var patternOfRecord = new RegExp(stringPatternRecord);
-  var match = patternOfRecord.exec(comment);
+  var match = patternOfRecord.exec(row.comment);
   if (match == null || !(match.length > 0)) { return }
   sheetTimeOnly.appendRow([
     row.date,         // column 1  (date)
@@ -120,4 +105,3 @@ function archiveSheetTimeOnly() {
     sheetTimeOnly.deleteRows(2, lastRow - 1);
   }
 }
-
